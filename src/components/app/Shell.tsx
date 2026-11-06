@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Sun, ScanSearch, Newspaper, NotebookPen, Bot, Settings } from "lucide-react";
 import type { ReactNode } from "react";
+import { Login } from "@/components/app/Login";
+import { signOut, supabaseConfigurado, useSession } from "@/lib/supabase";
 
 const tabs = [
   { to: "/", label: "Hoje", icon: Sun },
@@ -11,10 +13,13 @@ const tabs = [
 ] as const;
 
 export function Shell({ children }: { children: ReactNode }) {
+  const session = useSession();
+  if (supabaseConfigurado && !session) return <Login />;
   return (
     <div className="mx-auto min-h-screen max-w-xl">
       <div className="flex items-center justify-between px-4 pt-4">
         <span className="text-sm font-semibold text-ok">Agente Trader</span>
+        {session && <button onClick={signOut} className="ml-auto mr-1 min-h-11 px-2 text-sm text-muted-foreground">Sair</button>}
         <Link to="/config" aria-label="Configurações" className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted">
           <Settings className="h-5 w-5" />
         </Link>
