@@ -4,7 +4,7 @@ import { Send } from "lucide-react";
 import { PageTitle, inputCls } from "@/components/app/ui";
 
 export const Route = createFileRoute("/agente")({
-  validateSearch: (s: Record<string, unknown>) => ({ q: typeof s.q === "string" ? s.q : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({ q: typeof s["q"] === "string" ? (s["q"] as string) : undefined }),
   head: () => ({
     meta: [
       { title: "Agente · Agente Trader" },

@@ -53,8 +53,8 @@ function Analisar() {
     const compra = a > e && s < e, venda = a < e && s > e;
     const check: Resp[] = ITENS.map((_, i) => {
       if (i === 6) return rr >= 1.5 ? "Sim" : ptsStop ? "Não" : "Não deu pra ver";
-      if (!prints[SLOTS[Math.min(2, Math.floor(i / 2))].id]) return "Não deu pra ver";
-      return (["Sim", "Sim", "Não deu pra ver", "Sim", "Sim", "Sim"] as Resp[])[i];
+      if (!prints[SLOTS[Math.min(2, Math.floor(i / 2))]!.id]) return "Não deu pra ver";
+      return (["Sim", "Sim", "Não deu pra ver", "Sim", "Sim", "Sim"] as Resp[])[i] ?? "Não deu pra ver";
     });
     setChecklistHoje(check.filter((c) => c === "Sim").length);
     if (!temTodos) return setRes({ veredito: "Fora por enquanto", motivo: "Faltam prints: o método precisa dos 3 tempos gráficos.", tone: "warn", check });
@@ -164,7 +164,7 @@ function Marcador({ src, onClose }: { src: string; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-background p-4">
       <div className="mb-2 flex items-center justify-between">
-        <p className="text-sm">{ys.length < 3 ? <>Toque para marcar: <b>{MARCAS[ys.length].k}</b></> : "Pronto!"}</p>
+        <p className="text-sm">{ys.length < 3 ? <>Toque para marcar: <b>{MARCAS[ys.length]!.k}</b></> : "Pronto!"}</p>
         <div className="flex gap-2">
           <button onClick={() => setYs([])} className="rounded-lg border border-border px-3 text-sm">Limpar</button>
           <button onClick={onClose} aria-label="Fechar" className="flex w-11 items-center justify-center rounded-lg border border-border"><X className="h-5 w-5" /></button>
@@ -179,8 +179,8 @@ function Marcador({ src, onClose }: { src: string; onClose: () => void }) {
           <img src={src} alt="Print para marcar" className="w-full select-none" draggable={false} />
           {ys.map((y, i) => (
             <div key={i} className="pointer-events-none absolute inset-x-0" style={{ top: `${y}%` }}>
-              <div className="border-t-2 border-dashed" style={{ borderColor: MARCAS[i].cor }} />
-              <span className="absolute right-1 -top-6 rounded bg-background/80 px-1.5 text-xs font-semibold" style={{ color: MARCAS[i].cor }}>{MARCAS[i].k}</span>
+              <div className="border-t-2 border-dashed" style={{ borderColor: MARCAS[i]!.cor }} />
+              <span className="absolute right-1 -top-6 rounded bg-background/80 px-1.5 text-xs font-semibold" style={{ color: MARCAS[i]!.cor }}>{MARCAS[i]!.k}</span>
             </div>
           ))}
         </div>
