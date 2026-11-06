@@ -2,7 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { ImagePlus, X } from "lucide-react";
 import { Card, Field, PageTitle, Pill, Segmented, inputCls } from "@/components/app/ui";
-import { PONTO_RS, useStore, type Ativo } from "@/lib/store";
+import { PONTO_RS, dentroJanelaNoticia, stopsHoje, useStore, type Ativo } from "@/lib/store";
+
+// Vira false quando a função analisar-prints (IA) estiver conectada.
+const MODO_DEMO = true;
 
 export const Route = createFileRoute("/analisar")({
   head: () => ({
@@ -30,11 +33,12 @@ const ITENS = [
   "MMEs 5, 9 e 21 alinhadas no 3 min",
   "Gatilho de entrada formado no 3 min",
   "Fora da janela de notícia de alto impacto",
-  "Alvo pelo menos 1,5x o stop",
+  "Stop cabe no seu risco em R$",
 ];
 
 function Analisar() {
-  const { config, setChecklistHoje } = useStore();
+  const { config, setChecklistHoje, eventos, trades } = useStore();
+  const parado = stopsHoje(trades) >= config.limiteStops;
   const [ativo, setAtivo] = useState<Ativo>(config.ativoPadrao);
   const [prints, setPrints] = useState<Record<string, string>>({});
   const [entrada, setEntrada] = useState(""); const [stop, setStop] = useState(""); const [alvo, setAlvo] = useState("");
@@ -49,24 +53,32 @@ function Analisar() {
   const rr = ptsStop ? ptsAlvo / ptsStop : 0;
 
   const analisar = () => {
+    if (parado) return;
     const temTodos = SLOTS.every((x) => prints[x.id]);
     const compra = a > e && s < e, venda = a < e && s > e;
+    const riscoRs = ptsStop * PONTO_RS[ativo];
+    const foraJanela = !dentroJanelaNoticia(eventos);
     const check: Resp[] = ITENS.map((_, i) => {
-      if (i === 6) return rr >= 1.5 ? "Sim" : ptsStop ? "Não" : "Não deu pra ver";
-      if (!prints[SLOTS[Math.min(2, Math.floor(i / 2))]!.id]) return "Não deu pra ver";
-      return (["Sim", "Sim", "Não deu pra ver", "Sim", "Sim", "Sim"] as Resp[])[i] ?? "Não deu pra ver";
+      if (i === 5) return foraJanela ? "Sim" : "Não";
+      if (i === 6) return !ptsStop ? "Não deu pra ver" : riscoRs <= config.riscoRs ? "Sim" : "Não";
+      return "Não deu pra ver"; // itens 1 a 5 só são lidos dos prints quando a IA estiver conectada
     });
     setChecklistHoje(check.filter((c) => c === "Sim").length);
-    if (!temTodos) return setRes({ veredito: "Fora por enquanto", motivo: "Faltam prints: o método precisa dos 3 tempos gráficos.", tone: "warn", check });
-    if (!compra && !venda) return setRes({ veredito: "Fora por enquanto", motivo: "Entrada, stop e alvo não formam um plano coerente.", tone: "warn", check });
-    if (rr < 1.5) return setRes({ veredito: "Fora por enquanto", motivo: `Relação alvo/stop de ${rr.toFixed(1)}: abaixo de 1,5.`, tone: "warn", check });
-    if (check.includes("Não")) return setRes({ veredito: "Fora por enquanto", motivo: "Há item do checklist com resposta Não.", tone: "warn", check });
-    setRes({ veredito: compra ? "Compra possível" : "Venda possível", motivo: "Tempos alinhados e relação alvo/stop adequada. Confirme o gatilho antes.", tone: "ok", check });
+    const fora = (motivo: string) => setRes({ veredito: "Fora por enquanto", motivo, tone: "warn", check });
+    if (!temTodos) return fora("Faltam prints: o método precisa dos 3 tempos gráficos.");
+    if (!compra && !venda) return fora("Entrada, stop e alvo não formam um plano coerente.");
+    if (riscoRs > config.riscoRs) return fora(`Stop de R$ ${riscoRs.toFixed(2)} passa do seu risco de R$ ${config.riscoRs.toFixed(2)}.`);
+    if (!foraJanela) return fora("Dentro de uma janela de notícia de alto impacto.");
+    if (rr < 1.5) return fora(`Relação alvo/stop de ${rr.toFixed(1)}: abaixo de 1,5.`);
+    if (MODO_DEMO) return setRes({ veredito: "Plano coerente (demo)", motivo: "Risco e relação alvo/stop ok. O checklist dos prints só será lido quando a IA estiver conectada.", tone: "warn", check });
+    if (check.includes("Não")) return fora("Há item do checklist com resposta Não.");
+    setRes({ veredito: compra ? "Compra possível" : "Venda possível", motivo: "Tempos alinhados e plano dentro do risco. Confirme o gatilho fechado antes.", tone: "ok", check });
   };
 
   return (
     <div className="space-y-4">
       <PageTitle sub="Veredito do método, nunca recomendação">Analisar</PageTitle>
+      {MODO_DEMO && <Pill tone="warn">MODO DEMO: o checklist ainda não é lido dos prints</Pill>}
       <Segmented<Ativo> value={ativo} options={["WINZ26", "WDOZ26"]} onChange={setAtivo} />
 
       <Card title="Prints">
@@ -94,7 +106,8 @@ function Analisar() {
           <Field label="Stop"><input type="number" inputMode="decimal" className={inputCls} value={stop} onChange={(x) => setStop(x.target.value)} /></Field>
           <Field label="Alvo"><input type="number" inputMode="decimal" className={inputCls} value={alvo} onChange={(x) => setAlvo(x.target.value)} /></Field>
         </div>
-        <button onClick={analisar} className="mt-3 w-full rounded-lg bg-primary font-semibold text-primary-foreground">Analisar</button>
+        <button onClick={analisar} disabled={parado} className="mt-3 w-full rounded-lg bg-primary font-semibold text-primary-foreground disabled:opacity-40">Analisar</button>
+        {parado && <p className="mt-2 text-sm text-warn">Limite de stops atingido: pare por hoje.</p>}
       </Card>
 
       {res && (
