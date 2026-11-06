@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { dbReplace, dbSelect, supabaseConfigurado, useSession, userId } from "@/lib/supabase";
 
 export type Ativo = "WINZ26" | "WDOZ26";
 export type Impacto = "Alto" | "Médio" | "Baixo";
@@ -38,6 +39,7 @@ type Store = {
   noticias: Noticia[];
   trades: Trade[]; setTrades: (t: Trade[]) => void;
   checklistHoje: number; setChecklistHoje: (n: number) => void;
+  syncErro: string | null;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -51,14 +53,52 @@ function usePersist<T>(key: string, initial: T): [T, (v: T) => void] {
   return [v, set];
 }
 
+const configPadrao: Config = { riscoRs: 15, limiteStops: 2, ativoPadrao: "WINZ26" };
+const p2 = (n: number) => String(n).padStart(2, "0");
+const toTrade = (t: Trade) => ({ id: t.id, data_hora: new Date(t.dataHora).toISOString(), ativo: t.ativo, lado: t.lado, alinhados: t.alinhados, entrada: t.entrada, stop: t.stop, alvo: t.alvo, saida: t.saida, resultado_rs: t.resultadoRs, resultado_r: t.resultadoR, seguiu_checklist: t.seguiuChecklist, execucao: t.execucao, saida_alvo: t.saidaAlvo });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const fromTrade = (r: any): Trade => { const d = new Date(r.data_hora); return { id: r.id, dataHora: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`, ativo: r.ativo, lado: r.lado, alinhados: r.alinhados, entrada: +r.entrada, stop: +r.stop, alvo: +r.alvo, saida: +(r.saida ?? 0), resultadoRs: +(r.resultado_rs ?? 0), resultadoR: +(r.resultado_r ?? 0), seguiuChecklist: r.seguiu_checklist, execucao: r.execucao, saidaAlvo: r.saida_alvo ?? "" }; };
+const toEvento = (e: Evento) => ({ id: e.id, hora: e.hora, nome: e.nome, pais: e.pais, impacto: e.impacto });
+
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [config, setConfig] = usePersist<Config>("at.config", { riscoRs: 15, limiteStops: 2, ativoPadrao: "WINZ26" });
+  const session = useSession();
+  const remoto = supabaseConfigurado && !!session;
+  const [config, setConfig] = usePersist<Config>("at.config", configPadrao);
   const [eventos, setEventos] = usePersist("at.eventos", eventosIniciais);
   const [trades, setTrades] = usePersist("at.trades", tradesIniciais);
   const [checklistHoje, setChecklistHoje] = usePersist("at.checklist", 0);
+  const [carregado, setCarregado] = useState(!remoto);
+  const [syncErro, setSyncErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!remoto) { setCarregado(true); return; }
+    let vivo = true;
+    setCarregado(false);
+    (async () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const [s, e, j] = await Promise.all([dbSelect<any>("settings"), dbSelect<any>("events"), dbSelect<any>("journal")]);
+        if (!vivo) return;
+        setConfig(s[0] ? { riscoRs: +s[0].risco_rs, limiteStops: s[0].limite_stops, ativoPadrao: s[0].ativo_padrao } : configPadrao);
+        setEventos(e.map((r) => ({ id: r.id, hora: r.hora, nome: r.nome, pais: r.pais, impacto: r.impacto })));
+        setTrades(j.map(fromTrade));
+        setSyncErro(null);
+      } catch (err) { if (vivo) setSyncErro(err instanceof Error ? err.message : String(err)); }
+      if (vivo) setCarregado(true);
+    })();
+    return () => { vivo = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remoto]);
+
+  const erro = (e: unknown) => setSyncErro(e instanceof Error ? e.message : String(e));
+  const salvaConfig = (c: Config) => { setConfig(c); if (remoto) dbReplace("settings", [{ user_id: userId(), risco_rs: c.riscoRs, limite_stops: c.limiteStops, ativo_padrao: c.ativoPadrao }], "user_id").catch(erro); };
+  const salvaEventos = (l: Evento[]) => { setEventos(l); if (remoto) dbReplace("events", l.map(toEvento)).catch(erro); };
+  const salvaTrades = (l: Trade[]) => { setTrades(l); if (remoto) dbReplace("journal", l.map(toTrade)).catch(erro); };
+
   return (
-    <Ctx.Provider value={{ config, setConfig, eventos, setEventos, noticias: noticiasIniciais, trades, setTrades, checklistHoje, setChecklistHoje }}>
-      {children}
+    <Ctx.Provider value={{ config, setConfig: salvaConfig, eventos, setEventos: salvaEventos, noticias: noticiasIniciais, trades, setTrades: salvaTrades, checklistHoje, setChecklistHoje, syncErro }}>
+      {syncErro && <p className="bg-muted px-4 py-2 text-center text-xs text-warn">Erro ao sincronizar com o banco: {syncErro}</p>}
+      {carregado ? children : <p className="p-6 text-center text-sm text-muted-foreground">Carregando...</p>}
     </Ctx.Provider>
   );
 }
@@ -76,4 +116,20 @@ export function janelaFora(hora: string) {
   return `Fora ${f(t - 10)} a ${f(t + 20)}`;
 }
 
-export const uid = () => Math.random().toString(36).slice(2, 10);
+export const uid = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Math.random().toString(36).slice(2, 10));
+
+export function stopsHoje(trades: Trade[]) {
+  const hoje = new Date().toLocaleDateString("sv-SE");
+  return trades.filter((t) => t.dataHora.startsWith(hoje) && t.resultadoRs < 0).length;
+}
+
+// true se agora estiver dentro da janela (10 min antes a 20 min depois) de um evento de alto impacto
+export function dentroJanelaNoticia(eventos: Evento[], agora = new Date()) {
+  const n = agora.getHours() * 60 + agora.getMinutes();
+  return eventos.some((e) => {
+    if (e.impacto !== "Alto") return false;
+    const [h = 0, m = 0] = e.hora.split(":").map(Number);
+    const t = h * 60 + m;
+    return n >= t - 10 && n <= t + 20;
+  });
+}
