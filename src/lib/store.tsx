@@ -70,7 +70,7 @@ export function useStore() {
 }
 
 export function janelaFora(hora: string) {
-  const [h, m] = hora.split(":").map(Number);
+  const [h = 0, m = 0] = hora.split(":").map(Number);
   const t = h * 60 + m;
   const f = (x: number) => `${String(Math.floor(x / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`;
   return `Fora ${f(t - 10)} a ${f(t + 20)}`;

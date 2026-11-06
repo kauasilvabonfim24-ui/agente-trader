@@ -66,7 +66,7 @@ function Diario() {
           <Field label="60 e 15 alinhados?"><Segmented value={f.alinhados} options={["Sim", "Não"]} onChange={(v) => setF({ ...f, alinhados: v })} /></Field>
           <div className="grid grid-cols-2 gap-2">
             {(["entrada", "stop", "alvo", "saida"] as const).map((k) => (
-              <Field key={k} label={k === "saida" ? "Saída" : k[0].toUpperCase() + k.slice(1)}>
+              <Field key={k} label={k === "saida" ? "Saída" : k[0]!.toUpperCase() + k.slice(1)}>
                 <input type="number" inputMode="decimal" className={inputCls} value={f[k]} onChange={set(k)} onBlur={calc} />
               </Field>
             ))}
