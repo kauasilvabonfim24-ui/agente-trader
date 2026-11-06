@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgenteRouteImport } from './routes/agente'
+import { Route as AnalisarRouteImport } from './routes/analisar'
 import { Route as ConfigRouteImport } from './routes/config'
 import { Route as DiarioRouteImport } from './routes/diario'
 import { Route as NoticiasRouteImport } from './routes/noticias'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const AgenteRoute = AgenteRouteImport.update({
   id: '/agente',
   path: '/agente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalisarRoute = AnalisarRouteImport.update({
+  id: '/analisar',
+  path: '/analisar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfigRoute = ConfigRouteImport.update({
@@ -44,6 +50,7 @@ const NoticiasRoute = NoticiasRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agente': typeof AgenteRoute
+  '/analisar': typeof AnalisarRoute
   '/config': typeof ConfigRoute
   '/diario': typeof DiarioRoute
   '/noticias': typeof NoticiasRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agente': typeof AgenteRoute
+  '/analisar': typeof AnalisarRoute
   '/config': typeof ConfigRoute
   '/diario': typeof DiarioRoute
   '/noticias': typeof NoticiasRoute
@@ -59,21 +67,30 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/agente': typeof AgenteRoute
+  '/analisar': typeof AnalisarRoute
   '/config': typeof ConfigRoute
   '/diario': typeof DiarioRoute
   '/noticias': typeof NoticiasRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/agente' | '/config' | '/diario' | '/noticias'
+  fullPaths: '/' | '/agente' | '/analisar' | '/config' | '/diario' | '/noticias'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/agente' | '/config' | '/diario' | '/noticias'
-  id: '__root__' | '/' | '/agente' | '/config' | '/diario' | '/noticias'
+  to: '/' | '/agente' | '/analisar' | '/config' | '/diario' | '/noticias'
+  id:
+    | '__root__'
+    | '/'
+    | '/agente'
+    | '/analisar'
+    | '/config'
+    | '/diario'
+    | '/noticias'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgenteRoute: typeof AgenteRoute
+  AnalisarRoute: typeof AnalisarRoute
   ConfigRoute: typeof ConfigRoute
   DiarioRoute: typeof DiarioRoute
   NoticiasRoute: typeof NoticiasRoute
@@ -93,6 +110,13 @@ declare module '@tanstack/react-router' {
       path: '/agente'
       fullPath: '/agente'
       preLoaderRoute: typeof AgenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analisar': {
+      id: '/analisar'
+      path: '/analisar'
+      fullPath: '/analisar'
+      preLoaderRoute: typeof AnalisarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/config': {
@@ -122,6 +146,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgenteRoute: AgenteRoute,
+  AnalisarRoute: AnalisarRoute,
   ConfigRoute: ConfigRoute,
   DiarioRoute: DiarioRoute,
   NoticiasRoute: NoticiasRoute,
