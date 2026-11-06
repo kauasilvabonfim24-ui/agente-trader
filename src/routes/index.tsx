@@ -20,7 +20,7 @@ function Hoje() {
   const altos = eventos.filter((e) => e.impacto === "Alto").sort((a, b) => a.hora.localeCompare(b.hora));
   const hoje = new Date().toISOString().slice(0, 10);
   const stops = trades.filter((t) => t.dataHora.startsWith(hoje) && t.resultadoRs < 0).length;
-  const n = noticias[0];
+  const n = noticias[0]!;
   const noLimite = stops >= config.limiteStops;
 
   return (
