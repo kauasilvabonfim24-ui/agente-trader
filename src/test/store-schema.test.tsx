@@ -11,7 +11,7 @@ vi.mock("@/lib/supabase", () => ({
 let store: ReturnType<typeof useStore>;
 function Probe() { store = useStore(); return <span>Pronto</span>; }
 
-const event = { id: "22222222-2222-4222-8222-222222222222", user_id: mocks.session.user_id, data: "2026-11-07", hora: "10:30", nome: "Payroll", pais: "EUA", impacto: "Alto" };
+const event = { id: "22222222-2222-4222-8222-222222222222", user_id: mocks.session.user_id, data: "2026-11-07", hora: "10:30", nome: "Payroll", pais: "EUA", impacto: "Alto" as const };
 const trade = { id: "33333333-3333-4333-8333-333333333333", user_id: mocks.session.user_id, data_hora: "2026-11-07T12:30:00.000Z", ativo: "WINZ26", lado: "Compra", alinhados: true, entrada: 100, stop: 90, alvo: 120, saida: 120, resultado_rs: 4, resultado_r: 2, seguiu_checklist: true, execucao: "No gatilho", saida_alvo: "Saiu no alvo", imagens: ["11111111-1111-4111-8111-111111111111/print.png"], notas: "Registro pessoal", leitura_ia: "Leitura registrada" };
 
 beforeEach(() => {
