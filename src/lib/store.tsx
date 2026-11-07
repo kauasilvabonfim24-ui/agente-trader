@@ -3,12 +3,13 @@ import { dbReplace, dbSelect, supabaseConfigurado, useSession, userId } from "@/
 
 export type Ativo = "WINZ26" | "WDOZ26";
 export type Impacto = "Alto" | "Médio" | "Baixo";
-export type Evento = { id: string; hora: string; nome: string; pais: string; impacto: Impacto };
+export type Evento = { id: string; data?: string; hora: string; nome: string; pais: string; impacto: Impacto };
 export type Noticia = { id: string; titulo: string; resumo: string; costuma: string; fonte: string; hora: string };
 export type Trade = {
   id: string; dataHora: string; ativo: Ativo; lado: "Compra" | "Venda"; alinhados: boolean;
   entrada: number; stop: number; alvo: number; saida: number; resultadoRs: number; resultadoR: number;
   seguiuChecklist: boolean; execucao: "No gatilho" | "Antecipei"; saidaAlvo: string;
+  imagens?: string[] | null; notas?: string | null; leituraIa?: string | null;
 };
 export type Config = { riscoRs: number; limiteStops: number; ativoPadrao: Ativo };
 
@@ -17,9 +18,9 @@ export const PONTO_RS: Record<Ativo, number> = { WINZ26: 0.2, WDOZ26: 10 };
 const hoje = new Date().toISOString().slice(0, 10);
 
 const eventosIniciais: Evento[] = [
-  { id: "e1", hora: "09:00", nome: "IPCA (inflação Brasil)", pais: "BR", impacto: "Alto" },
-  { id: "e2", hora: "10:30", nome: "Payroll (emprego EUA)", pais: "EUA", impacto: "Alto" },
-  { id: "e3", hora: "12:00", nome: "Estoques de petróleo", pais: "EUA", impacto: "Médio" },
+  { id: "00000000-0000-4000-8000-000000000001", data: hoje, hora: "09:00", nome: "IPCA (inflação Brasil)", pais: "BR", impacto: "Alto" },
+  { id: "00000000-0000-4000-8000-000000000002", data: hoje, hora: "10:30", nome: "Payroll (emprego EUA)", pais: "EUA", impacto: "Alto" },
+  { id: "00000000-0000-4000-8000-000000000003", data: hoje, hora: "12:00", nome: "Estoques de petróleo", pais: "EUA", impacto: "Médio" },
 ];
 
 const noticiasIniciais: Noticia[] = [
@@ -55,10 +56,10 @@ function usePersist<T>(key: string, initial: T): [T, (v: T) => void] {
 
 const configPadrao: Config = { riscoRs: 15, limiteStops: 2, ativoPadrao: "WINZ26" };
 const p2 = (n: number) => String(n).padStart(2, "0");
-const toTrade = (t: Trade) => ({ id: t.id, data_hora: new Date(t.dataHora).toISOString(), ativo: t.ativo, lado: t.lado, alinhados: t.alinhados, entrada: t.entrada, stop: t.stop, alvo: t.alvo, saida: t.saida, resultado_rs: t.resultadoRs, resultado_r: t.resultadoR, seguiu_checklist: t.seguiuChecklist, execucao: t.execucao, saida_alvo: t.saidaAlvo });
+const toTrade = (t: Trade) => ({ id: t.id, user_id: userId(), data_hora: new Date(t.dataHora).toISOString(), ativo: t.ativo, lado: t.lado, alinhados: t.alinhados, entrada: t.entrada, stop: t.stop, alvo: t.alvo, saida: t.saida, resultado_rs: t.resultadoRs, resultado_r: t.resultadoR, seguiu_checklist: t.seguiuChecklist, execucao: t.execucao, saida_alvo: t.saidaAlvo, ...(t.imagens !== undefined ? { imagens: t.imagens } : {}), ...(t.notas !== undefined ? { notas: t.notas } : {}), ...(t.leituraIa !== undefined ? { leitura_ia: t.leituraIa } : {}) });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const fromTrade = (r: any): Trade => { const d = new Date(r.data_hora); return { id: r.id, dataHora: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`, ativo: r.ativo, lado: r.lado, alinhados: r.alinhados, entrada: +r.entrada, stop: +r.stop, alvo: +r.alvo, saida: +(r.saida ?? 0), resultadoRs: +(r.resultado_rs ?? 0), resultadoR: +(r.resultado_r ?? 0), seguiuChecklist: r.seguiu_checklist, execucao: r.execucao, saidaAlvo: r.saida_alvo ?? "" }; };
-const toEvento = (e: Evento) => ({ id: e.id, hora: e.hora, nome: e.nome, pais: e.pais, impacto: e.impacto });
+const fromTrade = (r: any): Trade => { const d = new Date(r.data_hora); return { id: r.id, dataHora: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`, ativo: r.ativo, lado: r.lado, alinhados: r.alinhados, entrada: +r.entrada, stop: +r.stop, alvo: +r.alvo, saida: +(r.saida ?? 0), resultadoRs: +(r.resultado_rs ?? 0), resultadoR: +(r.resultado_r ?? 0), seguiuChecklist: r.seguiu_checklist, execucao: r.execucao, saidaAlvo: r.saida_alvo ?? "", imagens: r.imagens, notas: r.notas, leituraIa: r.leitura_ia }; };
+const toEvento = (e: Evento) => ({ id: e.id, user_id: userId(), data: e.data ?? new Date().toLocaleDateString("sv-SE"), hora: e.hora, nome: e.nome, pais: e.pais, impacto: e.impacto });
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const session = useSession();
@@ -80,7 +81,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const [s, e, j] = await Promise.all([dbSelect<any>("settings"), dbSelect<any>("events"), dbSelect<any>("journal")]);
         if (!vivo) return;
         setConfig(s[0] ? { riscoRs: +s[0].risco_rs, limiteStops: s[0].limite_stops, ativoPadrao: s[0].ativo_padrao } : configPadrao);
-        setEventos(e.map((r) => ({ id: r.id, hora: r.hora, nome: r.nome, pais: r.pais, impacto: r.impacto })));
+        setEventos(e.map((r) => ({ id: r.id, data: r.data, hora: r.hora, nome: r.nome, pais: r.pais, impacto: r.impacto })));
         setTrades(j.map(fromTrade));
         setSyncErro(null);
       } catch (err) { if (vivo) setSyncErro(err instanceof Error ? err.message : String(err)); }
