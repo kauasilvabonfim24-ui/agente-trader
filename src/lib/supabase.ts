@@ -3,8 +3,8 @@ import { useSyncExternalStore } from "react";
 // Sem dependência extra: fala direto com a API REST do Supabase.
 // Só a URL e a chave PÚBLICA (publishable/anon) entram aqui. Nunca use service_role.
 const ENV = import.meta.env as Record<string, string | undefined>;
-const URL_ = ENV["VITE_SUPABASE_URL"];
-const KEY = ENV["VITE_SUPABASE_PUBLISHABLE_KEY"];
+const URL_ = ENV["VITE_SUPABASE_URL"] || "https://horykfonjjbcwplmafqw.supabase.co";
+const KEY = ENV["VITE_SUPABASE_PUBLISHABLE_KEY"] || "sb_publishable_Ck32Kt3FB0ECtOHKv0D0mQ_JR_vLFTa";
 export const supabaseConfigurado = !!(URL_ && KEY);
 
 type Session = { access_token: string; refresh_token: string; expires_at: number; user_id: string };
@@ -28,7 +28,7 @@ async function pedirToken(body: Record<string, string>, grant: string) {
   const r = await fetch(`${URL_}/auth/v1/token?grant_type=${grant}`, {
     method: "POST", headers: { apikey: KEY!, "Content-Type": "application/json" }, body: JSON.stringify(body),
   });
-  const j = await r.json();
+  const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.error_description || j.msg || "Falha no login");
   setSession({ access_token: j.access_token, refresh_token: j.refresh_token, expires_at: Date.now() + (j.expires_in - 60) * 1000, user_id: j.user.id });
 }
