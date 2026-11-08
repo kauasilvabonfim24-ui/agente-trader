@@ -8,7 +8,7 @@ import { removerPrint, uploadPrint, userId } from "@/lib/supabase";
 import { desfecho } from "@/lib/trades";
 
 export const Route = createFileRoute("/diario")({
-  validateSearch: (s: Record<string, unknown>): { editar?: string } => (typeof s.editar === "string" ? { editar: s.editar } : {}),
+  validateSearch: (s: Record<string, unknown>): { editar?: string } => (typeof s["editar"] === "string" ? { editar: s["editar"] } : {}),
   head: () => ({
     meta: [
       { title: "Diário · Agente Trader" },
