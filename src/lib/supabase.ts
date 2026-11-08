@@ -90,3 +90,22 @@ export async function removerPrint(path: string) {
   cacheUrl.delete(path);
   await storage(`object/prints/${path}`, { method: "DELETE" });
 }
+
+// ---- Edge Functions ----
+export async function chamarFuncao<T>(nome: string, body: unknown): Promise<T> {
+  const t = await token();
+  const r = await fetch(`${URL_}/functions/v1/${nome}`, {
+    method: "POST",
+    headers: { apikey: KEY!, Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json().catch(() => null);
+  if (!r.ok || j?.erro) throw new Error(j?.erro || (r.status === 401 ? "Sua sessão expirou. Entre de novo no app." : "Erro ao analisar. Tente de novo."));
+  return j as T;
+}
+export async function blobParaBase64(blob: Blob): Promise<string> {
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  let bin = "";
+  for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
