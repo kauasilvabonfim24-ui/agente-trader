@@ -7,8 +7,7 @@ export function Login() {
   const [erro, setErro] = useState(""); const [carregando, setCarregando] = useState(false);
   const entrar = async () => {
     setErro(""); setCarregando(true);
-    try { await signIn(email.trim(), senha); } catch (e) { setErro(e instanceof Error ? e.message : "Falha no login"); }
-    setCarregando(false);
+        try { await signIn(email.trim(), senha); navigate({ to: "/", replace: true }); } catch (e) { setErro(e instanceof Error ? e.message : "Falha no login"); }
   };
   return (
     <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-3 px-4">
