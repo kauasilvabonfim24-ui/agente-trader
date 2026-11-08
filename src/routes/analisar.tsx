@@ -3,9 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ImagePlus, X } from "lucide-react";
 import { Card, Field, PageTitle, Pill, Segmented, inputCls } from "@/components/app/ui";
 import { PONTO_RS, dentroJanelaNoticia, stopsHoje, useStore, type Ativo } from "@/lib/store";
-
-// Vira false quando a função analisar-prints (IA) estiver conectada.
-const MODO_DEMO = true;
+import { blobParaBase64, chamarFuncao, reduzirImagem } from "@/lib/supabase";
 
 export const Route = createFileRoute("/analisar")({
   head: () => ({
@@ -26,23 +24,33 @@ const SLOTS = [
 ] as const;
 
 type Resp = "Sim" | "Não" | "Não deu pra ver";
-const ITENS = [
-  "Preço do lado certo da MME 200 no 60 min",
-  "MME 50 no 15 min apontando na mesma direção",
-  "Preço em região de topo/fundo relevante no 15 min",
-  "MMEs 5, 9 e 21 alinhadas no 3 min",
-  "Gatilho de entrada formado no 3 min",
-  "Fora da janela de notícia de alto impacto",
-  "Stop cabe no seu risco em R$",
-];
+type ItemCheck = { item: string; resposta: Resp; motivo?: string };
+type RespostaFuncao = {
+  veredito: string;
+  motivo: string;
+  checklist: ItemCheck[];
+  o_que_a_ia_viu?: Record<string, string>;
+  aviso?: string;
+};
+type Resultado = {
+  veredito: string;
+  motivo: string;
+  tone: "ok" | "warn";
+  check: ItemCheck[];
+  ia?: Record<string, string> | undefined;
+  aviso?: string | undefined;
+};
 
 function Analisar() {
   const { config, setChecklistHoje, eventos, trades } = useStore();
   const parado = stopsHoje(trades) >= config.limiteStops;
   const [ativo, setAtivo] = useState<Ativo>(config.ativoPadrao);
   const [prints, setPrints] = useState<Record<string, string>>({});
+  const [arquivos, setArquivos] = useState<Record<string, File>>({});
   const [entrada, setEntrada] = useState(""); const [stop, setStop] = useState(""); const [alvo, setAlvo] = useState("");
-  const [res, setRes] = useState<null | { veredito: string; motivo: string; tone: "ok" | "warn"; check: Resp[] }>(null);
+  const [res, setRes] = useState<Resultado | null>(null);
+  const [carregando, setCarregando] = useState(false);
+  const [erroIA, setErroIA] = useState<string | null>(null);
   const [verIA, setVerIA] = useState(false);
   const [marcar, setMarcar] = useState<string | null>(null);
 
@@ -52,33 +60,61 @@ function Analisar() {
   const ptsStop = Math.abs(e - s), ptsAlvo = Math.abs(a - e);
   const rr = ptsStop ? ptsAlvo / ptsStop : 0;
 
-  const analisar = () => {
-    if (parado) return;
-    const temTodos = SLOTS.every((x) => prints[x.id]);
+  const analisar = async () => {
+    if (parado || carregando) return;
+    setErroIA(null);
+    const temTodos = SLOTS.every((x) => arquivos[x.id]);
     const compra = a > e && s < e, venda = a < e && s > e;
     const riscoRs = ptsStop * PONTO_RS[ativo];
-    const foraJanela = !dentroJanelaNoticia(eventos);
-    const check: Resp[] = ITENS.map((_, i) => {
-      if (i === 5) return foraJanela ? "Sim" : "Não";
-      if (i === 6) return !ptsStop ? "Não deu pra ver" : riscoRs <= config.riscoRs ? "Sim" : "Não";
-      return "Não deu pra ver"; // itens 1 a 5 só são lidos dos prints quando a IA estiver conectada
-    });
-    setChecklistHoje(check.filter((c) => c === "Sim").length);
-    const fora = (motivo: string) => setRes({ veredito: "Fora por enquanto", motivo, tone: "warn", check });
+    const naJanela = dentroJanelaNoticia(eventos);
+    const fora = (motivo: string) => setRes({ veredito: "Fora por enquanto", motivo, tone: "warn", check: [] });
+
+    // Travas rápidas no próprio app (não gastam chamada da IA)
     if (!temTodos) return fora("Faltam prints: o método precisa dos 3 tempos gráficos.");
     if (!compra && !venda) return fora("Entrada, stop e alvo não formam um plano coerente.");
     if (riscoRs > config.riscoRs) return fora(`Stop de R$ ${riscoRs.toFixed(2)} passa do seu risco de R$ ${config.riscoRs.toFixed(2)}.`);
-    if (!foraJanela) return fora("Dentro de uma janela de notícia de alto impacto.");
+    if (naJanela) return fora("Dentro de uma janela de notícia de alto impacto.");
     if (rr < 1.5) return fora(`Relação alvo/stop de ${rr.toFixed(1)}: abaixo de 1,5.`);
-    if (MODO_DEMO) return setRes({ veredito: "Plano coerente (demo)", motivo: "Risco e relação alvo/stop ok. O checklist dos prints só será lido quando a IA estiver conectada.", tone: "warn", check });
-    if (check.includes("Não")) return fora("Há item do checklist com resposta Não.");
-    setRes({ veredito: compra ? "Compra possível" : "Venda possível", motivo: "Tempos alinhados e plano dentro do risco. Confirme o gatilho fechado antes.", tone: "ok", check });
+
+    setCarregando(true);
+    try {
+      const imagens: { tempo: string; mime: string; base64: string }[] = [];
+      for (const sl of SLOTS) {
+        const file = arquivos[sl.id]!;
+        let base64 = await blobParaBase64(await reduzirImagem(file));
+        if (base64.length > 3_800_000) base64 = await blobParaBase64(await reduzirImagem(file, 1000));
+        imagens.push({ tempo: sl.id, mime: "image/jpeg", base64 });
+      }
+      const r = await chamarFuncao<RespostaFuncao>("analisar-prints", {
+        ativo,
+        imagens,
+        entrada: e,
+        stop: s,
+        alvo: a,
+        risco_por_trade: config.riscoRs,
+        stops_de_hoje: stopsHoje(trades),
+        limite_stops: config.limiteStops,
+        dentro_janela_noticia: naJanela,
+      });
+      setChecklistHoje(r.checklist.filter((c) => c.resposta === "Sim").length);
+      setRes({
+        veredito: r.veredito,
+        motivo: r.motivo,
+        tone: r.veredito === "Fora por enquanto" ? "warn" : "ok",
+        check: r.checklist,
+        ia: r.o_que_a_ia_viu,
+        aviso: r.aviso,
+      });
+    } catch (err) {
+      setErroIA(err instanceof Error ? err.message : String(err));
+    } finally {
+      setCarregando(false);
+    }
   };
 
   return (
     <div className="space-y-4">
       <PageTitle sub="Veredito do método, nunca recomendação">Analisar</PageTitle>
-      {MODO_DEMO && <Pill tone="warn">MODO DEMO: o checklist ainda não é lido dos prints</Pill>}
       <Segmented<Ativo> value={ativo} options={["WINZ26", "WDOZ26"]} onChange={setAtivo} />
 
       <Card title="Prints">
@@ -92,6 +128,7 @@ function Analisar() {
                 <input type="file" accept="image/*" className="sr-only" onChange={(ev) => {
                   const file = ev.target.files?.[0]; if (!file) return;
                   setPrints((p) => ({ ...p, [sl.id]: URL.createObjectURL(file) }));
+                  setArquivos((p) => ({ ...p, [sl.id]: file }));
                 }} />
               </label>
               <span className="text-[11px] leading-tight text-muted-foreground">{sl.label}: {sl.dica}</span>
@@ -106,8 +143,9 @@ function Analisar() {
           <Field label="Stop"><input type="number" inputMode="decimal" className={inputCls} value={stop} onChange={(x) => setStop(x.target.value)} /></Field>
           <Field label="Alvo"><input type="number" inputMode="decimal" className={inputCls} value={alvo} onChange={(x) => setAlvo(x.target.value)} /></Field>
         </div>
-        <button onClick={analisar} disabled={parado} className="mt-3 w-full rounded-lg bg-primary font-semibold text-primary-foreground disabled:opacity-40">Analisar</button>
+        <button onClick={analisar} disabled={parado || carregando} className="mt-3 w-full rounded-lg bg-primary font-semibold text-primary-foreground disabled:opacity-40">{carregando ? "Analisando..." : "Analisar"}</button>
         {parado && <p className="mt-2 text-sm text-warn">Limite de stops atingido: pare por hoje.</p>}
+        {erroIA && <p className="mt-2 rounded-lg border border-warn/40 bg-warn/10 p-3 text-sm text-warn">{erroIA}</p>}
       </Card>
 
       {res && (
@@ -115,18 +153,24 @@ function Analisar() {
           <Card title="Veredito do método">
             <Pill tone={res.tone}>{res.tone === "ok" ? "✓ " : "! "}{res.veredito}</Pill>
             <p className="mt-2 text-sm text-muted-foreground">{res.motivo}</p>
+            {res.aviso && <p className="mt-2 text-xs text-muted-foreground">{res.aviso}</p>}
           </Card>
 
-          <Card title={`Checklist ${res.check.filter((c) => c === "Sim").length} de 7`}>
-            <ul className="space-y-2">
-              {ITENS.map((it, i) => (
-                <li key={it} className="flex items-start justify-between gap-2 text-sm">
-                  <span>{it}</span>
-                  <Pill tone={res.check[i] === "Sim" ? "ok" : res.check[i] === "Não" ? "warn" : "muted"}>{res.check[i]}</Pill>
-                </li>
-              ))}
-            </ul>
-          </Card>
+          {res.check.length > 0 && (
+            <Card title={`Checklist ${res.check.filter((c) => c.resposta === "Sim").length} de 7`}>
+              <ul className="space-y-2">
+                {res.check.map((c) => (
+                  <li key={c.item} className="flex items-start justify-between gap-2 text-sm">
+                    <div>
+                      <span>{c.item}</span>
+                      {c.motivo && <p className="text-xs text-muted-foreground">{c.motivo}</p>}
+                    </div>
+                    <Pill tone={c.resposta === "Sim" ? "ok" : c.resposta === "Não" ? "warn" : "muted"}>{c.resposta}</Pill>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
 
           <Card title="Plano hipotético">
             <dl className="grid grid-cols-2 gap-y-2 text-sm">
@@ -138,15 +182,17 @@ function Analisar() {
             <p className="mt-2 text-xs text-muted-foreground">Valores por 1 contrato. Hipotético e educativo.</p>
           </Card>
 
-          <button onClick={() => setVerIA(!verIA)} className="w-full rounded-lg border border-border font-medium">{verIA ? "Ocultar" : "Ver o que a IA enxergou"}</button>
-          {verIA && (
-            <Card title="O que a IA enxergou (exemplo)">
-              <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                <li>60 min: preço {prints["60"] ? "acima da MME 200" : "sem print"}.</li>
-                <li>15 min: {prints["15"] ? "MME 50 inclinada, região de fundo recente próxima" : "sem print"}.</li>
-                <li>3 min: {prints["3"] ? "MMEs 5, 9 e 21 abertas em leque" : "sem print"}.</li>
-              </ul>
-            </Card>
+          {res.ia && Object.keys(res.ia).length > 0 && (
+            <>
+              <button onClick={() => setVerIA(!verIA)} className="w-full rounded-lg border border-border font-medium">{verIA ? "Ocultar" : "Ver o que a IA enxergou"}</button>
+              {verIA && (
+                <Card title="O que a IA enxergou">
+                  <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                    {SLOTS.map((sl) => (res.ia?.[sl.id] ? <li key={sl.id}>{sl.label}: {res.ia[sl.id]}</li> : null))}
+                  </ul>
+                </Card>
+              )}
+            </>
           )}
         </>
       )}
