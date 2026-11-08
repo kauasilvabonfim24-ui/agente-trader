@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, PageTitle, Pill } from "@/components/app/ui";
 import { janelaFora, useStore } from "@/lib/store";
+import { desfecho, erroMaisRepetido, estatisticas, fmtR, ordenar } from "@/lib/trades";
 import { Progress } from "@/components/ui/progress";
 
 export const Route = createFileRoute("/")({
@@ -98,9 +99,3 @@ function NaoEsqueca() {
   );
 }
 
-function _fim() {
-  return (
-    <div>
-    </div>
-  );
-}
