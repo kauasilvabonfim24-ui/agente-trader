@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, PageTitle, Pill } from "@/components/app/ui";
-import { janelaFora, useStore } from "@/lib/store";
+import { janelaFora, stopsHoje, useStore } from "@/lib/store";
 import { desfecho, erroMaisRepetido, estatisticas, fmtR, ordenar } from "@/lib/trades";
 import { Progress } from "@/components/ui/progress";
+import { Grafico } from "@/components/app/Grafico";
+import { ChatAgente } from "@/components/app/ChatAgente";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -19,14 +21,26 @@ export const Route = createFileRoute("/")({
 function Hoje() {
   const { eventos, noticias, trades, config, checklistHoje } = useStore();
   const altos = eventos.filter((e) => e.impacto === "Alto").sort((a, b) => a.hora.localeCompare(b.hora));
-  const hoje = new Date().toISOString().slice(0, 10);
-  const stops = trades.filter((t) => t.dataHora.startsWith(hoje) && t.resultadoRs < 0).length;
+  const stops = stopsHoje(trades);
   const n = noticias[0]!;
   const noLimite = stops >= config.limiteStops;
 
   return (
     <div className="space-y-4">
       <PageTitle sub={new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}>Hoje</PageTitle>
+
+      <Card title="Guarda do dia">
+        <div className="flex items-center justify-between text-sm">
+          <span>Stops hoje <b>{stops} de {config.limiteStops}</b></span>
+          <Pill tone={noLimite ? "warn" : "ok"}>{noLimite ? "Limite atingido: parar" : "Dentro do limite"}</Pill>
+        </div>
+        <Progress value={Math.min(100, (stops / config.limiteStops) * 100)} className="mt-2 h-2" />
+        <p className="mt-3 text-sm">Checklist <b>{checklistHoje} de 7</b></p>
+      </Card>
+
+      <Grafico />
+
+      <ChatAgente />
 
       <Card title="Agenda de alto impacto">
         {altos.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum evento de alto impacto cadastrado.</p> : (
@@ -59,15 +73,6 @@ function Hoje() {
           <a href={n.fonte} target="_blank" rel="noreferrer" className="flex min-h-11 items-center justify-center rounded-lg border border-border text-sm font-medium">Ver fonte</a>
           <Link to="/agente" search={{ q: n.titulo }} className="flex min-h-11 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">Perguntar ao agente</Link>
         </div>
-      </Card>
-
-      <Card title="Guarda do dia">
-        <div className="flex items-center justify-between text-sm">
-          <span>Stops hoje <b>{stops} de {config.limiteStops}</b></span>
-          <Pill tone={noLimite ? "warn" : "ok"}>{noLimite ? "Limite atingido: parar" : "Dentro do limite"}</Pill>
-        </div>
-        <Progress value={Math.min(100, (stops / config.limiteStops) * 100)} className="mt-2 h-2" />
-        <p className="mt-3 text-sm">Checklist <b>{checklistHoje} de 7</b></p>
       </Card>
 
       <NaoEsqueca />
