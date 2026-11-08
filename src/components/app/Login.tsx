@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { signIn } from "@/lib/supabase";
 import { inputCls } from "@/components/app/ui";
 
-export function Login() {
+export function Login() {  
+const navigate = useNavigate();
   const [email, setEmail] = useState(""); const [senha, setSenha] = useState("");
   const [erro, setErro] = useState(""); const [carregando, setCarregando] = useState(false);
   const entrar = async () => {
