@@ -56,3 +56,37 @@ export async function dbReplace(table: string, rows: Record<string, unknown>[], 
   const ids = rows.map((r) => r[key]);
   await api(`${table}?${ids.length ? `${key}=not.in.(${ids.join(",")})` : `${key}=not.is.null`}`, { method: "DELETE" });
 }
+
+// ---- Storage: bucket privado "prints" ----
+export async function reduzirImagem(file: Blob, max = 1600): Promise<Blob> {
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
+  return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("Falha ao converter imagem"))), "image/jpeg", 0.8));
+}
+async function storage(path: string, init: RequestInit) {
+  const t = await token();
+  const r = await fetch(`${URL_}/storage/v1/${path}`, { ...init, headers: { apikey: KEY!, Authorization: `Bearer ${t}`, ...(init.headers || {}) } });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json().catch(() => null);
+}
+export async function uploadPrint(blob: Blob, tradeId: string) {
+  const path = `${userId()}/${tradeId}/${Date.now()}${Math.random().toString(36).slice(2, 6)}.jpg`;
+  await storage(`object/prints/${path}`, { method: "POST", headers: { "Content-Type": "image/jpeg" }, body: await reduzirImagem(blob) });
+  return path;
+}
+const cacheUrl = new Map<string, { url: string; ate: number }>();
+export async function urlAssinada(path: string) {
+  const c = cacheUrl.get(path);
+  if (c && c.ate > Date.now()) return c.url;
+  const j = await storage(`object/sign/prints/${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expiresIn: 3600 }) });
+  const url = `${URL_}/storage/v1${j.signedURL}`;
+  cacheUrl.set(path, { url, ate: Date.now() + 3000 * 1000 });
+  return url;
+}
+export async function removerPrint(path: string) {
+  cacheUrl.delete(path);
+  await storage(`object/prints/${path}`, { method: "DELETE" });
+}

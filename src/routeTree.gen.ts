@@ -15,6 +15,8 @@ import { Route as AnalisarRouteImport } from './routes/analisar'
 import { Route as ConfigRouteImport } from './routes/config'
 import { Route as DiarioRouteImport } from './routes/diario'
 import { Route as NoticiasRouteImport } from './routes/noticias'
+import { Route as DiarioHistoricoRouteImport } from './routes/diario_.historico'
+import { Route as DiarioTradeIdRouteImport } from './routes/diario_.trade.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +48,16 @@ const NoticiasRoute = NoticiasRouteImport.update({
   path: '/noticias',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DiarioHistoricoRoute = DiarioHistoricoRouteImport.update({
+  id: '/diario_/historico',
+  path: '/diario/historico',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiarioTradeIdRoute = DiarioTradeIdRouteImport.update({
+  id: '/diario_/trade/$id',
+  path: '/diario/trade/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +66,8 @@ export interface FileRoutesByFullPath {
   '/config': typeof ConfigRoute
   '/diario': typeof DiarioRoute
   '/noticias': typeof NoticiasRoute
+  '/diario/historico': typeof DiarioHistoricoRoute
+  '/diario/trade/$id': typeof DiarioTradeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +76,8 @@ export interface FileRoutesByTo {
   '/config': typeof ConfigRoute
   '/diario': typeof DiarioRoute
   '/noticias': typeof NoticiasRoute
+  '/diario/historico': typeof DiarioHistoricoRoute
+  '/diario/trade/$id': typeof DiarioTradeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,12 +87,30 @@ export interface FileRoutesById {
   '/config': typeof ConfigRoute
   '/diario': typeof DiarioRoute
   '/noticias': typeof NoticiasRoute
+  '/diario_/historico': typeof DiarioHistoricoRoute
+  '/diario_/trade/$id': typeof DiarioTradeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/agente' | '/analisar' | '/config' | '/diario' | '/noticias'
+  fullPaths:
+    | '/'
+    | '/agente'
+    | '/analisar'
+    | '/config'
+    | '/diario'
+    | '/noticias'
+    | '/diario/historico'
+    | '/diario/trade/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/agente' | '/analisar' | '/config' | '/diario' | '/noticias'
+  to:
+    | '/'
+    | '/agente'
+    | '/analisar'
+    | '/config'
+    | '/diario'
+    | '/noticias'
+    | '/diario/historico'
+    | '/diario/trade/$id'
   id:
     | '__root__'
     | '/'
@@ -85,6 +119,8 @@ export interface FileRouteTypes {
     | '/config'
     | '/diario'
     | '/noticias'
+    | '/diario_/historico'
+    | '/diario_/trade/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -94,6 +130,8 @@ export interface RootRouteChildren {
   ConfigRoute: typeof ConfigRoute
   DiarioRoute: typeof DiarioRoute
   NoticiasRoute: typeof NoticiasRoute
+  DiarioHistoricoRoute: typeof DiarioHistoricoRoute
+  DiarioTradeIdRoute: typeof DiarioTradeIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -140,6 +178,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NoticiasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/diario_/historico': {
+      id: '/diario_/historico'
+      path: '/diario/historico'
+      fullPath: '/diario/historico'
+      preLoaderRoute: typeof DiarioHistoricoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diario_/trade/$id': {
+      id: '/diario_/trade/$id'
+      path: '/diario/trade/$id'
+      fullPath: '/diario/trade/$id'
+      preLoaderRoute: typeof DiarioTradeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -150,6 +202,8 @@ const rootRouteChildren: RootRouteChildren = {
   ConfigRoute: ConfigRoute,
   DiarioRoute: DiarioRoute,
   NoticiasRoute: NoticiasRoute,
+  DiarioHistoricoRoute: DiarioHistoricoRoute,
+  DiarioTradeIdRoute: DiarioTradeIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
