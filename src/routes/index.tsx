@@ -68,6 +68,39 @@ function Hoje() {
         <Progress value={Math.min(100, (stops / config.limiteStops) * 100)} className="mt-2 h-2" />
         <p className="mt-3 text-sm">Checklist <b>{checklistHoje} de 7</b></p>
       </Card>
+
+      <NaoEsqueca />
+    </div>
+  );
+}
+
+function NaoEsqueca() {
+  const { trades } = useStore();
+  if (trades.length === 0) return (
+    <Card title="Não esqueça"><Link to="/diario" className="text-sm text-ok">Registre o primeiro trade no Diário</Link></Card>
+  );
+  const ult = ordenar(trades).slice(0, 3);
+  const erro = erroMaisRepetido(trades);
+  const s = estatisticas(trades);
+  return (
+    <Card title="Não esqueça">
+      <ul className="space-y-1.5 text-sm">
+        {ult.map((t) => (
+          <li key={t.id} className="flex items-center justify-between gap-2">
+            <span>{new Date(t.dataHora).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} · {t.lado}</span>
+            <Pill tone={t.resultadoRs > 0 ? "ok" : t.resultadoRs < 0 ? "warn" : "muted"}>{desfecho(t)} R$ {t.resultadoRs.toFixed(2)}</Pill>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-sm">{erro ? <>Erro mais repetido: <b className="text-warn">{erro.motivo}</b> ({erro.vezes}x)</> : "Nenhum erro repetido nos trades que deram ruim."}</p>
+      <p className="mt-1 text-sm">No gatilho <b>{fmtR(s.rGatilho)}</b> x Antecipei <b>{fmtR(s.rAntecipei)}</b> (R médio)</p>
+    </Card>
+  );
+}
+
+function _fim() {
+  return (
+    <div>
     </div>
   );
 }
