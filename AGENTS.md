@@ -28,3 +28,6 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## App installation
+- Keep home-screen installation manifest-only, with PNG icons for Android and iOS; do not add an app-shell service worker unless offline use is explicitly requested, to avoid stale previews.
