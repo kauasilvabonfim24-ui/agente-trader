@@ -15,6 +15,7 @@ import { Route as AnalisarRouteImport } from './routes/analisar'
 import { Route as ConfigRouteImport } from './routes/config'
 import { Route as DiarioRouteImport } from './routes/diario'
 import { Route as NoticiasRouteImport } from './routes/noticias'
+import { Route as DiarioDiasRouteImport } from './routes/diario_.dias'
 import { Route as DiarioHistoricoRouteImport } from './routes/diario_.historico'
 import { Route as DiarioTradeIdRouteImport } from './routes/diario_.trade.$id'
 
@@ -48,6 +49,11 @@ const NoticiasRoute = NoticiasRouteImport.update({
   path: '/noticias',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DiarioDiasRoute = DiarioDiasRouteImport.update({
+  id: '/diario_/dias',
+  path: '/diario/dias',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DiarioHistoricoRoute = DiarioHistoricoRouteImport.update({
   id: '/diario_/historico',
   path: '/diario/historico',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/config': typeof ConfigRoute
   '/diario': typeof DiarioRoute
   '/noticias': typeof NoticiasRoute
+  '/diario/dias': typeof DiarioDiasRoute
   '/diario/historico': typeof DiarioHistoricoRoute
   '/diario/trade/$id': typeof DiarioTradeIdRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/config': typeof ConfigRoute
   '/diario': typeof DiarioRoute
   '/noticias': typeof NoticiasRoute
+  '/diario/dias': typeof DiarioDiasRoute
   '/diario/historico': typeof DiarioHistoricoRoute
   '/diario/trade/$id': typeof DiarioTradeIdRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/config': typeof ConfigRoute
   '/diario': typeof DiarioRoute
   '/noticias': typeof NoticiasRoute
+  '/diario_/dias': typeof DiarioDiasRoute
   '/diario_/historico': typeof DiarioHistoricoRoute
   '/diario_/trade/$id': typeof DiarioTradeIdRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/config'
     | '/diario'
     | '/noticias'
+    | '/diario/dias'
     | '/diario/historico'
     | '/diario/trade/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/config'
     | '/diario'
     | '/noticias'
+    | '/diario/dias'
     | '/diario/historico'
     | '/diario/trade/$id'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/config'
     | '/diario'
     | '/noticias'
+    | '/diario_/dias'
     | '/diario_/historico'
     | '/diario_/trade/$id'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   ConfigRoute: typeof ConfigRoute
   DiarioRoute: typeof DiarioRoute
   NoticiasRoute: typeof NoticiasRoute
+  DiarioDiasRoute: typeof DiarioDiasRoute
   DiarioHistoricoRoute: typeof DiarioHistoricoRoute
   DiarioTradeIdRoute: typeof DiarioTradeIdRoute
 }
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NoticiasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/diario_/dias': {
+      id: '/diario_/dias'
+      path: '/diario/dias'
+      fullPath: '/diario/dias'
+      preLoaderRoute: typeof DiarioDiasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/diario_/historico': {
       id: '/diario_/historico'
       path: '/diario/historico'
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConfigRoute: ConfigRoute,
   DiarioRoute: DiarioRoute,
   NoticiasRoute: NoticiasRoute,
+  DiarioDiasRoute: DiarioDiasRoute,
   DiarioHistoricoRoute: DiarioHistoricoRoute,
   DiarioTradeIdRoute: DiarioTradeIdRoute,
 }
