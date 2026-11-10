@@ -1,0 +1,4 @@
+- [ ] Registro rápido com preços opcionais, edição e exclusão.
+- [ ] Meus Dias com check-in único por data e estatísticas.
+- [ ] Chat agente-chat nas duas telas e convite de check-in em Hoje.
+- [ ] Testes e verificação das telas; banco existente sem alterações.
