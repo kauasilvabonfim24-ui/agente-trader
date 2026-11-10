@@ -19,5 +19,5 @@ export const Route = createFileRoute("/agente")({
 
 function Agente() {
   const { q } = Route.useSearch();
-  return <div className="space-y-4"><PageTitle>Agente</PageTitle><ConversaAgente pergunta={q} /></div>;
+  return <div className="space-y-4"><PageTitle>Agente</PageTitle><ConversaAgente pergunta={q ?? ""} /></div>;
 }

@@ -37,7 +37,7 @@ describe("Alinhamento com as colunas do banco existente", () => {
   });
   it("sempre envia imagens array e notas/leitura como null quando ausentes", async () => {
     const view = await ready();
-    act(() => store.setTrades(store.trades.map((t) => ({ ...t, imagens: undefined, notas: undefined, leituraIa: undefined }))));
+    act(() => store.setTrades(store.trades.map(({ imagens: _imagens, notas: _notas, leituraIa: _leitura, ...t }) => t)));
     expect(mocks.replace).toHaveBeenCalledWith("journal", [expect.objectContaining({ imagens: [], notas: null, leitura_ia: null })]);
     view.unmount();
   });
