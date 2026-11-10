@@ -31,3 +31,8 @@ use the editor.
 
 ## App installation
 - Keep home-screen installation manifest-only, with PNG icons for Android and iOS; do not add an app-shell service worker unless offline use is explicitly requested, to avoid stale previews.
+
+## Diary and chat
+- Keep day-log reads in a user-scoped query cache and save single rows using the existing authenticated REST helper with the user/date conflict target; this avoids deleting unrelated days.
+- Share the agent-chat UI and message adapter across both chat placements so payloads and error handling remain consistent.
+- Preserve nullable trade prices and exclude missing R values from averages so quick entries do not become fictitious zero-price trades.

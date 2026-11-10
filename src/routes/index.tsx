@@ -5,11 +5,14 @@ import { desfecho, erroMaisRepetido, estatisticas, fmtR, ordenar } from "@/lib/t
 import { Progress } from "@/components/ui/progress";
 import { Grafico } from "@/components/app/Grafico";
 import { ChatAgente } from "@/components/app/ChatAgente";
+import { dataLocal, useDias } from "@/lib/days";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Hoje · Agente Trader" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "description", content: "Agenda de alto impacto, clima do dia e guarda de stops." },
       { property: "og:title", content: "Hoje · Agente Trader" },
       { property: "og:description", content: "Agenda de alto impacto, clima do dia e guarda de stops." },
@@ -19,6 +22,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Hoje() {
+  const { dias, carregando, erro } = useDias();
   const { eventos, noticias, trades, config, checklistHoje } = useStore();
   const altos = eventos.filter((e) => e.impacto === "Alto").sort((a, b) => a.hora.localeCompare(b.hora));
   const stops = stopsHoje(trades);
@@ -28,6 +32,8 @@ function Hoje() {
   return (
     <div className="space-y-4">
       <PageTitle sub={new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}>Hoje</PageTitle>
+
+      {!carregando && !erro && !dias.some((d) => d.data === dataLocal()) && <Card title="Como você está hoje?"><Link to="/diario/dias" className="flex min-h-11 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">Check-in de hoje</Link></Card>}
 
       <Card title="Guarda do dia">
         <div className="flex items-center justify-between text-sm">

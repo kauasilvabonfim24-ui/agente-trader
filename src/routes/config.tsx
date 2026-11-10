@@ -5,6 +5,8 @@ import { useStore, type Ativo } from "@/lib/store";
 export const Route = createFileRoute("/config")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Configurações · Agente Trader" },
       { name: "description", content: "Risco por trade, limite de stops e ativo padrão." },
       { property: "og:title", content: "Configurações · Agente Trader" },

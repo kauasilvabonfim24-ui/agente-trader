@@ -8,6 +8,8 @@ import { blobParaBase64, chamarFuncao, reduzirImagem } from "@/lib/supabase";
 export const Route = createFileRoute("/analisar")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Analisar · Agente Trader" },
       { name: "description", content: "Envie os prints e veja o veredito do método." },
       { property: "og:title", content: "Analisar · Agente Trader" },

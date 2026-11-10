@@ -4,11 +4,14 @@ import { Card, PageTitle, Pill } from "@/components/app/ui";
 import { Print } from "@/components/app/Print";
 import { useStore } from "@/lib/store";
 import { removerPrint } from "@/lib/supabase";
-import { desfecho, fmtR } from "@/lib/trades";
+import { desfecho, fmtR, mostrarNumero } from "@/lib/trades";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/diario_/trade/$id")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Detalhe do trade · Agente Trader" },
       { name: "description", content: "Prints, campos e notas de um trade registrado." },
       { property: "og:title", content: "Detalhe do trade · Agente Trader" },
@@ -41,8 +44,8 @@ function Detalhe() {
 
   const linhas: [string, string][] = [
     ["Data", new Date(t.dataHora).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })],
-    ["60 e 15", t.alinhados ? "Alinhados" : "Desalinhados"], ["Entrada", String(t.entrada)], ["Stop", String(t.stop)],
-    ["Alvo", String(t.alvo)], ["Saída", String(t.saida)], ["Resultado", `R$ ${t.resultadoRs.toFixed(2)} · ${fmtR(t.resultadoR)}`],
+    ["60 e 15", t.alinhados ? "Alinhados" : "Desalinhados"], ["Entrada", mostrarNumero(t.entrada)], ["Stop", mostrarNumero(t.stop)],
+    ["Alvo", mostrarNumero(t.alvo)], ["Saída", mostrarNumero(t.saida)], ["Resultado", `R$ ${t.resultadoRs.toFixed(2)} · ${fmtR(t.resultadoR)}`],
     ["Checklist", t.seguiuChecklist ? "Seguido" : "Não seguido"], ["Teria saído no alvo", t.saidaAlvo || "—"],
   ];
 
@@ -67,7 +70,7 @@ function Detalhe() {
 
       <div className="grid grid-cols-2 gap-2">
         <Link to="/diario" search={{ editar: t.id }} className="flex min-h-11 items-center justify-center rounded-lg bg-primary font-semibold text-primary-foreground">Editar</Link>
-        <button onClick={excluir} disabled={excluindo} className="min-h-11 rounded-lg border border-warn/50 font-semibold text-warn">{excluindo ? "Excluindo..." : "Excluir"}</button>
+        <Button variant="outline" onClick={excluir} disabled={excluindo} className="min-h-11 rounded-lg border border-warn/50 font-semibold text-warn">{excluindo ? "Excluindo..." : "Excluir"}</Button>
       </div>
 
       {zoom && (

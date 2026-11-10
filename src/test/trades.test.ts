@@ -5,6 +5,9 @@ import type { Trade } from "@/lib/store";
 const t = (p: Partial<Trade>): Trade => ({ id: "x", dataHora: "2026-11-01T10:00", ativo: "WINZ26", lado: "Compra", alinhados: true, entrada: 1, stop: 1, alvo: 1, saida: 1, resultadoRs: 0, resultadoR: 0, seguiuChecklist: true, execucao: "No gatilho", saidaAlvo: "", ...p });
 
 describe("trades", () => {
+  it("não inclui R ausente nas médias", () => {
+    expect(estatisticas([t({ resultadoR: null }), t({ resultadoR: 2 })]).rMedio).toBe(2);
+  });
   it("desfecho: >0 deu bom, <0 deu ruim, 0 empate", () => {
     expect(desfecho(t({ resultadoRs: 5 }))).toBe("Deu bom");
     expect(desfecho(t({ resultadoRs: -5 }))).toBe("Deu ruim");

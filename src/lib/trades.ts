@@ -11,7 +11,7 @@ export function filtrar(trades: Trade[], f: Filtro) {
   return trades.filter((t) => t.execucao === f);
 }
 
-const media = (l: number[]) => (l.length ? l.reduce((a, b) => a + b, 0) / l.length : null);
+const media = (l: (number | null)[]) => { const valores = l.filter((n): n is number => n !== null); return valores.length ? valores.reduce((a, b) => a + b, 0) / valores.length : null; };
 export function estatisticas(trades: Trade[]) {
   return {
     total: trades.length,
@@ -34,3 +34,5 @@ export function erroMaisRepetido(trades: Trade[]): { motivo: string; vezes: numb
 
 export const ordenar = (trades: Trade[]) => [...trades].sort((a, b) => b.dataHora.localeCompare(a.dataHora));
 export const fmtR = (n: number | null) => (n === null ? "—" : `${n >= 0 ? "+" : ""}${n.toFixed(2)} R`);
+export const numeroOpcional = (valor: string) => valor.trim() === "" ? null : Number(valor);
+export const mostrarNumero = (valor: number | null) => valor === null ? "-" : String(valor);

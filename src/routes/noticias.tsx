@@ -8,6 +8,8 @@ import { chamarFuncao } from "@/lib/supabase";
 export const Route = createFileRoute("/noticias")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Notícias · Agente Trader" },
       { name: "description", content: "Notícias explicadas e eventos do dia." },
       { property: "og:title", content: "Notícias · Agente Trader" },

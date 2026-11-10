@@ -9,6 +9,8 @@ import { DiarioTabs } from "./diario";
 export const Route = createFileRoute("/diario_/historico")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Histórico de trades · Agente Trader" },
       { name: "description", content: "Todos os seus trades com prints, filtros e estatísticas." },
       { property: "og:title", content: "Histórico de trades · Agente Trader" },

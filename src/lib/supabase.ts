@@ -109,3 +109,11 @@ export async function blobParaBase64(blob: Blob): Promise<string> {
   for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
   return btoa(bin);
 }
+
+// Upsert isolado: não apaga os demais dias e respeita a unicidade por usuário/data.
+export async function salvarDia(dia: { id: string; data: string; estado: string; concentracao: number; resultado_rs: number | null; stops: number; ativos: string | null; notas: string | null }) {
+  return api("day_log?on_conflict=user_id,data", {
+    method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=representation" },
+    body: JSON.stringify({ ...dia, user_id: userId() }),
+  });
+}

@@ -27,6 +27,20 @@ async function ready() {
 }
 
 describe("Alinhamento com as colunas do banco existente", () => {
+  it("preserva preços nulos na leitura e gravação", async () => {
+    mocks.select.mockImplementation(async (table: string) => table === "journal" ? [{ ...trade, entrada: null, stop: null, alvo: null, saida: null }] : []);
+    const view = await ready();
+    expect(store.trades[0]).toMatchObject({ entrada: null, stop: null, alvo: null, saida: null });
+    act(() => store.setTrades(store.trades));
+    expect(mocks.replace).toHaveBeenCalledWith("journal", [expect.objectContaining({ entrada: null, stop: null, alvo: null, saida: null })]);
+    view.unmount();
+  });
+  it("sempre envia imagens array e notas/leitura como null quando ausentes", async () => {
+    const view = await ready();
+    act(() => store.setTrades(store.trades.map(({ imagens: _imagens, notas: _notas, leituraIa: _leitura, ...t }) => t)));
+    expect(mocks.replace).toHaveBeenCalledWith("journal", [expect.objectContaining({ imagens: [], notas: null, leitura_ia: null })]);
+    view.unmount();
+  });
   it("inclui user_id ao enviar journal", async () => {
     const view = await ready();
     act(() => store.setTrades(store.trades));
