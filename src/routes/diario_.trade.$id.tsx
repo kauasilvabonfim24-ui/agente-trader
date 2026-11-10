@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/diario_/trade/$id")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Detalhe do trade · Agente Trader" },
       { name: "description", content: "Prints, campos e notas de um trade registrado." },
       { property: "og:title", content: "Detalhe do trade · Agente Trader" },

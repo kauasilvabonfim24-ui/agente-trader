@@ -100,10 +100,6 @@ export async function chamarFuncao<T>(nome: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   const j = await r.json().catch(() => null);
-  if (!r.ok && (j?.message || j?.error || j?.erro)) {
-    const mensagem = j.message || j.error || j.erro;
-    throw new Error(typeof mensagem === "string" ? mensagem : JSON.stringify(mensagem));
-  }
   if (!r.ok || j?.erro) throw new Error(j?.erro || (r.status === 401 ? "Sua sessão expirou. Entre de novo no app." : "Erro ao analisar. Tente de novo."));
   return j as T;
 }
