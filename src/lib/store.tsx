@@ -7,7 +7,7 @@ export type Evento = { id: string; data?: string; hora: string; nome: string; pa
 export type Noticia = { id: string; titulo: string; resumo: string; costuma: string; fonte: string; hora: string };
 export type Trade = {
   id: string; dataHora: string; ativo: Ativo; lado: "Compra" | "Venda"; alinhados: boolean;
-  entrada: number; stop: number; alvo: number; saida: number; resultadoRs: number; resultadoR: number;
+  entrada: number | null; stop: number | null; alvo: number | null; saida: number | null; resultadoRs: number; resultadoR: number | null;
   seguiuChecklist: boolean; execucao: "No gatilho" | "Antecipei"; saidaAlvo: string;
   imagens?: string[] | null; notas?: string | null; leituraIa?: string | null;
 };
@@ -56,9 +56,9 @@ function usePersist<T>(key: string, initial: T): [T, (v: T) => void] {
 
 const configPadrao: Config = { riscoRs: 15, limiteStops: 2, ativoPadrao: "WINZ26" };
 const p2 = (n: number) => String(n).padStart(2, "0");
-const toTrade = (t: Trade) => ({ id: t.id, user_id: userId(), data_hora: new Date(t.dataHora).toISOString(), ativo: t.ativo, lado: t.lado, alinhados: t.alinhados, entrada: t.entrada, stop: t.stop, alvo: t.alvo, saida: t.saida, resultado_rs: t.resultadoRs, resultado_r: t.resultadoR, seguiu_checklist: t.seguiuChecklist, execucao: t.execucao, saida_alvo: t.saidaAlvo, ...(t.imagens !== undefined ? { imagens: t.imagens ?? [] } : {}), ...(t.notas !== undefined ? { notas: t.notas } : {}), ...(t.leituraIa !== undefined ? { leitura_ia: t.leituraIa } : {}) });
+const toTrade = (t: Trade) => ({ id: t.id, user_id: userId(), data_hora: new Date(t.dataHora).toISOString(), ativo: t.ativo, lado: t.lado, alinhados: t.alinhados, entrada: t.entrada, stop: t.stop, alvo: t.alvo, saida: t.saida, resultado_rs: t.resultadoRs, resultado_r: t.resultadoR, seguiu_checklist: t.seguiuChecklist, execucao: t.execucao, saida_alvo: t.saidaAlvo, imagens: t.imagens ?? [], notas: t.notas ?? null, leitura_ia: t.leituraIa ?? null });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const fromTrade = (r: any): Trade => { const d = new Date(r.data_hora); return { id: r.id, dataHora: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`, ativo: r.ativo, lado: r.lado, alinhados: r.alinhados, entrada: +r.entrada, stop: +r.stop, alvo: +r.alvo, saida: +(r.saida ?? 0), resultadoRs: +(r.resultado_rs ?? 0), resultadoR: +(r.resultado_r ?? 0), seguiuChecklist: r.seguiu_checklist, execucao: r.execucao, saidaAlvo: r.saida_alvo ?? "", imagens: r.imagens, notas: r.notas, leituraIa: r.leitura_ia }; };
+const fromTrade = (r: any): Trade => { const d = new Date(r.data_hora); return { id: r.id, dataHora: `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`, ativo: r.ativo, lado: r.lado, alinhados: r.alinhados, entrada: r.entrada == null ? null : +r.entrada, stop: r.stop == null ? null : +r.stop, alvo: r.alvo == null ? null : +r.alvo, saida: r.saida == null ? null : +r.saida, resultadoRs: +(r.resultado_rs ?? 0), resultadoR: r.resultado_r == null ? null : +r.resultado_r, seguiuChecklist: r.seguiu_checklist, execucao: r.execucao, saidaAlvo: r.saida_alvo ?? "", imagens: r.imagens ?? [], notas: r.notas ?? null, leituraIa: r.leitura_ia ?? null }; };
 const toEvento = (e: Evento) => ({ id: e.id, user_id: userId(), data: e.data ?? new Date().toLocaleDateString("sv-SE"), hora: e.hora, nome: e.nome, pais: e.pais, impacto: e.impacto });
 
 export function StoreProvider({ children }: { children: ReactNode }) {

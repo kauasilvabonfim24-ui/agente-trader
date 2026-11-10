@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export function Card({ title, children, className, action }: { title?: string; children: ReactNode; className?: string; action?: ReactNode }) {
   return (
@@ -38,16 +39,16 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
-export const inputCls = "w-full rounded-lg border border-input bg-background px-3 text-base text-foreground outline-none focus:ring-2 focus:ring-ring";
+export const inputCls = "min-h-11 min-w-0 w-full rounded-lg border border-input bg-background px-3 text-base text-foreground outline-none focus:ring-2 focus:ring-ring";
 
 export function Segmented<T extends string>({ value, options, onChange }: { value: T; options: T[]; onChange: (v: T) => void }) {
   return (
     <div className="flex gap-1 rounded-lg border border-border bg-background p-1">
       {options.map((o) => (
-        <button key={o} type="button" onClick={() => onChange(o)} aria-pressed={value === o}
-          className={cn("flex-1 rounded-md px-3 text-sm font-medium transition", value === o ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>
+        <Button variant="ghost" key={o} type="button" onClick={() => onChange(o)} aria-pressed={value === o}
+          className={cn("min-h-11 min-w-0 flex-1 whitespace-normal rounded-md px-2 text-sm font-medium transition", value === o ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>
           {o}
-        </button>
+        </Button>
       ))}
     </div>
   );
